@@ -38,29 +38,32 @@ client.on('message', function (topic, message) {
 function dataProcess(message) {
     var json = JSON.parse(message);
     var ip = json.deviceIP;
-    var mac = json.deviceMAC;
-    var color = json.color;
-    console.log(mac + '\n');
-    var sql = 'SELECT COUNT(`ip`) as num FROM `ip_table` WHERE ip = ?';
-    var params = [ip];
-    conn.query(sql, params, function (err, result) {
-        if (err) throw err;
-        if (result[0].num == 0) {
-            sql = 'INSERT INTO `ip_table`(`ip`) VALUES (?)';
-            params = [ip];
-            conn.query(sql, params, function (err, result) {
-                if (err) throw err;
-                sql = 'INSERT INTO `lcmdata`(`ip`, `device_mac`, `color`) VALUES (?, ?, "WHITE"), (?, ?, "BLACK"), (?, ?, "RED"), (?, ?, "GREEN"), (?, ?, "BLUE")';
-                params = [ip, mac, ip, mac, ip, mac, ip, mac, ip, mac];
-                conn.query(sql, params, function (err, result) {
-                    if (err) throw err;
-                });
-            });
-        }
-        sql = 'UPDATE `lcmdata` SET `lcm_power` = ?, `lcm_current` = ?, `backlight_power` = ?, `backlight_current` = ? WHERE `ip` = ? AND `color` = ?';
-        params = [json.data[0], json.data[1], json.data[2], json.data[3], ip, color];
+    if (ip != null) {
+        var mac = json.deviceMAC;
+        var color = json.color;
+        console.log(mac + '\n');
+        var sql = 'SELECT COUNT(`ip`) as num FROM `ip_table` WHERE ip = ?';
+        var params = [ip];
         conn.query(sql, params, function (err, result) {
             if (err) throw err;
+            if (result[0].num == 0) {
+                sql = 'INSERT INTO `ip_table`(`ip`) VALUES (?)';
+                params = [ip];
+                conn.query(sql, params, function (err, result) {
+                    if (err) throw err;
+                    sql = 'INSERT INTO `lcmdata`(`ip`, `device_mac`, `color`) VALUES (?, ?, "WHITE"), (?, ?, "BLACK"), (?, ?, "RED"), (?, ?, "GREEN"), (?, ?, "BLUE")';
+                    params = [ip, mac, ip, mac, ip, mac, ip, mac, ip, mac];
+                    conn.query(sql, params, function (err, result) {
+                        if (err) throw err;
+                    });
+                });
+            }
+            sql = 'UPDATE `lcmdata` SET `lcm_power` = ?, `lcm_current` = ?, `backlight_power` = ?, `backlight_current` = ? WHERE `ip` = ? AND `color` = ?';
+            params = [json.data[0], json.data[1], json.data[2], json.data[3], ip, color];
+            conn.query(sql, params, function (err, result) {
+                if (err) throw err;
+            });
         });
-    });
+    }
+
 }

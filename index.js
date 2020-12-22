@@ -2,7 +2,7 @@
 var mqtt = require('mqtt');
 var opt = {
     port: 1883,
-    clientId: 'nodejs',
+    clientId: 'nodejs1',
     username: 'PK5WSEH0SBUA13XT4K',
     password: 'PK5WSEH0SBUA13XT4K'
 };
@@ -13,7 +13,8 @@ var conn = mysql.createConnection({
     host: 'localhost',
     user: 'root',
     password: '',
-    database: 'lcm'
+    // database: 'lcm',
+    database: 'laravel'
 });
 
 // 日期取得
@@ -38,28 +39,30 @@ client.on('message', function (topic, message) {
 function dataProcess(message) {
     var json = JSON.parse(message);
     var ip = json.deviceIP;
+    let now_date = sd.format(new Date, 'YYYY-MM-DD HH:mm:ss');
     if (ip != null) {
         var mac = json.deviceMAC;
         var color = json.color;
         console.log(mac + '\n');
-        var sql = 'SELECT COUNT(`ip`) as num FROM `ip_table` WHERE ip = ?';
+        var sql = 'SELECT COUNT(`ip`) as num FROM `lcm_infos` WHERE ip = ?';
         var params = [ip];
         conn.query(sql, params, function (err, result) {
             if (err) throw err;
             if (result[0].num == 0) {
-                sql = 'INSERT INTO `ip_table`(`ip`) VALUES (?)';
-                params = [ip];
+                sql = 'INSERT INTO `lcm_infos`(`ip`, `created_at`, `updated_at`) VALUES (?, ?, ?)';
+                params = [ip, now_date, now_date];
                 conn.query(sql, params, function (err, result) {
                     if (err) throw err;
-                    sql = 'INSERT INTO `lcmdata`(`ip`, `device_mac`, `color`) VALUES (?, ?, "WHITE"), (?, ?, "BLACK"), (?, ?, "RED"), (?, ?, "GREEN"), (?, ?, "BLUE")';
-                    params = [ip, mac, ip, mac, ip, mac, ip, mac, ip, mac];
+                    sql = 'INSERT INTO `lcm_status`(`lcm_ip`, `lcm_mac`, `color`, `created_at`, `updated_at`)' +
+                        'VALUES (?, ?, "WHITE", ?, ?), (?, ?, "BLACK", ?, ?), (?, ?, "RED", ?, ?), (?, ?, "GREEN", ?, ?), (?, ?, "BLUE", ?, ?)';
+                    params = [ip, mac, now_date, now_date, ip, mac, now_date, now_date, ip, mac, now_date, now_date, ip, mac, now_date, now_date, ip, mac, now_date, now_date];
                     conn.query(sql, params, function (err, result) {
                         if (err) throw err;
                     });
                 });
             }
-            sql = 'UPDATE `lcmdata` SET `lcm_power` = ?, `lcm_current` = ?, `backlight_power` = ?, `backlight_current` = ? WHERE `ip` = ? AND `color` = ?';
-            params = [json.data[0], json.data[1], json.data[2], json.data[3], ip, color];
+            sql = 'UPDATE `lcm_status` SET `lcm_power` = ?, `lcm_current` = ?, `backlight_power` = ?, `backlight_current` = ?, `updated_at` = ? WHERE `lcm_ip` = ? AND `color` = ?';
+            params = [json.data[0], json.data[1], json.data[2], json.data[3], now_date, ip, color];
             conn.query(sql, params, function (err, result) {
                 if (err) throw err;
             });
